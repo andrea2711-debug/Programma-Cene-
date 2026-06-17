@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu Estivo Settimanale</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --green: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #d8f3dc;
+    --green-mid: #b7e4c7;
+    --amber: #f4a261;
+    --amber-light: #fff3e0;
+    --cream: #fefae0;
+    --dark: #1b1b1b;
+    --mid: #555;
+    --muted: #888;
+    --border: #e8e8e4;
+    --white: #ffffff;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    --shadow-hover: 0 6px 24px rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f6f8f5;
+    color: var(--dark);
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    background: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  .nav-logo {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-logo span { font-size: 1.4rem; }
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+  }
+  .nav-tab {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.75);
+    font-size: 0.92rem;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .nav-tab:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .nav-tab.active { background: rgba(255,255,255,0.18); color: #fff; }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, var(--green) 0%, #40916c 100%);
+    color: white;
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .hero p { font-size: 1rem; opacity: 0.85; }
+  .season-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+  }
+
+  /* WEEK GRID */
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 2.5rem;
+  }
+  .day-thumb {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.9rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .day-thumb:hover {
+    border-color: var(--green-light);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+  }
+  .day-thumb.selected {
+    border-color: var(--green);
+    background: var(--green-pale);
+  }
+  .day-thumb .day-name {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+  .day-thumb .day-meal {
+    font-size: 0.72rem;
+    color: var(--mid);
+    line-height: 1.3;
+  }
+  .day-thumb .day-emoji {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  /* MEAL CARD */
+  .meal-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .meal-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.4rem 1.5rem 0.8rem;
+  }
+  .meal-card-meta .meal-day-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+  .meal-card-meta h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--dark);
+  }
+  .meal-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .meal-tab {
+    background: var(--green-pale);
+    border: none;
+    color: var(--green);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .meal-tab:hover { background: var(--green-mid); }
+  .meal-tab.active { background: var(--green); color: white; }
+
+  .meal-detail { display: none; }
+  .meal-detail.active { display: flex; flex-direction: column; }
+
+  .meal-image-wrap {
+    width: 100%;
+    height: 240px;
+    overflow: hidden;
+    position: relative;
+    background: var(--green-pale);
+  }
+  .meal-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s;
+  }
+  .meal-image-wrap:hover img { transform: scale(1.03); }
+  .meal-image-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.45));
+    padding: 1.2rem 1.4rem 1rem;
+    color: white;
+  }
+  .meal-image-overlay h3 { font-size: 1.15rem; font-weight: 700; }
+  .meal-image-overlay p { font-size: 0.82rem; opacity: 0.9; }
+
+  .meal-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .meal-recipe, .meal-ingredients {
+    padding: 1.4rem 1.5rem;
+  }
+  .meal-recipe {
+    border-right: 1px solid var(--border);
+  }
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--green);
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--green-pale);
+  }
+
+  .recipe-steps { list-style: none; }
+  .recipe-steps li {
+    display: flex;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: var(--mid);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .recipe-steps li .step-num {
+    background: var(--green);
+    color: white;
+    border-radius: 50%;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .ingredient-list { list-style: none; }
+  .ingredient-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .ingredient-list li:last-child { border-bottom: none; }
+  .ingredient-list li .ing-name { color: var(--dark); }
+  .ingredient-list li .ing-qty {
+    color: var(--green);
+    font-weight: 600;
+    font-size: 0.82rem;
+    background: var(--green-pale);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .add-to-list-btn {
+    background: var(--green-pale);
+    border: 1.5px solid var(--green-mid);
+    color: var(--green);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 1rem 1.5rem 1.2rem;
+    width: calc(100% - 3rem);
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .add-to-list-btn:hover { background: var(--green); color: white; border-color: var(--green); }
+  .add-to-list-btn.added { background: var(--green); color: white; border-color: var(--green); }
+
+  /* LISTA SPESA */
+  .spesa-header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .spesa-header h2 { font-size: 1.3rem; font-weight: 700; }
+  .spesa-header p { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+
+  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-primary:hover { background: #1b4332; }
+  .btn-secondary {
+    background: var(--white);
+    color: var(--mid);
+    border: 1.5px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+  .btn-danger { background: #fee2e2; color: #dc2626; }
+  .btn-danger:hover { background: #dc2626; color: white; }
+
+  .spesa-body { padding: 1.5rem 2rem; }
+
+  .spesa-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+  .spesa-empty .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+  .spesa-empty h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--mid); }
+
+  .spesa-section { margin-bottom: 1.5rem; }
+  .spesa-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--green);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--green-pale);
+  }
+  .spesa-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    transition: background 0.15s;
+    border: 1px solid transparent;
+  }
+  .spesa-item:hover { background: var(--green-pale); border-color: var(--green-mid); }
+  .spesa-item.checked { opacity: 0.5; }
+  .spesa-item.checked .spesa-item-name { text-decoration: line-through; }
+  .spesa-item-left { display: flex; align-items: center; gap: 10px; }
+  .spesa-item-cb { width: 18px; height: 18px; accent-color: var(--green); cursor: pointer; }
+  .spesa-item-name { font-size: 0.9rem; }
+  .spesa-item-right { display: flex; align-items: center; gap: 10px; }
+  .spesa-item-qty {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--green);
+    background: var(--green-pale);
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+  .spesa-item-source {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .spesa-item-del {
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .spesa-item-del:hover { background: #fee2e2; color: #dc2626; }
+
+  .spesa-add-manual {
+    background: var(--white);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.2rem;
+    margin-top: 1.5rem;
+  }
+  .spesa-add-manual h4 { font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; color: var(--mid); }
+  .add-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .add-form input, .add-form select {
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 12px;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.15s;
+    background: white;
+    color: var(--dark);
+  }
+  .add-form input:focus, .add-form select:focus { border-color: var(--green); }
+  .add-form input[name="nome"] { flex: 2; min-width: 130px; }
+  .add-form input[name="qty"] { flex: 1; min-width: 80px; }
+  .add-form select { flex: 1; min-width: 110px; }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--green);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    z-index: 999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  @media (max-width: 640px) {
+    .week-grid { grid-template-columns: repeat(4, 1fr); }
+    .meal-body { grid-template-columns: 1fr; }
+    .meal-recipe { border-right: none; border-bottom: 1px solid var(--border); }
+    .nav-logo span { display: none; }
+    nav { padding: 0 1rem; }
+    .container { padding: 1.5rem 1rem; }
+    .spesa-header, .spesa-body { padding: 1.2rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><span>🌿</span> Menu Estivo</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('menu')">Menu settimana</button>
+    <button class="nav-tab" onclick="showPage('spesa')">Lista spesa <span id="spesa-count" style="background:rgba(255,255,255,0.25);padding:2px 7px;border-radius:10px;font-size:0.78rem;margin-left:4px;display:none;">0</span></button>
+  </div>
+</nav>
+
+<!-- PAGE: MENU -->
+<div id="page-menu" class="page active">
+  <div class="hero">
+    <div class="season-badge">☀️ Estate 2025</div>
+    <h1>Menu Pranzo & Cena</h1>
+    <p>Ricette semplici e gustose per tutta la settimana · 3 persone</p>
+  </div>
+  <div class="container">
+    <div class="week-grid" id="week-grid"></div>
+    <div id="day-detail"></div>
+  </div>
+</div>
+
+<!-- PAGE: SPESA -->
+<div id="page-spesa" class="page">
+  <div class="spesa-header">
+    <div>
+      <h2>🛒 Lista della spesa</h2>
+      <p>Ingredienti per 3 persone · aggiunti dal menu</p>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="exportExcel()">⬇ Esporta Excel</button>
+      <button class="btn btn-danger" onclick="clearList()">🗑 Svuota lista</button>
+    </div>
+  </div>
+  <div class="spesa-body">
+    <div id="spesa-content"></div>
+    <div class="spesa-add-manual">
+      <h4>➕ Aggiungi manualmente</h4>
+      <div class="add-form">
+        <input type="text" name="nome" placeholder="Nome ingrediente" id="manual-nome">
+        <input type="text" name="qty" placeholder="Quantità" id="manual-qty">
+        <select id="manual-cat">
+          <option value="Altro">Categoria</option>
+          <option value="Verdura & Frutta">Verdura & Frutta</option>
+          <option value="Carne & Affettati">Carne & Affettati</option>
+          <option value="Latticini & Uova">Latticini & Uova</option>
+          <option value="Pasta & Cereali">Pasta & Cereali</option>
+          <option value="Condimenti & Spezie">Condimenti & Spezie</option>
+          <option value="Legumi">Legumi</option>
+          <option value="Altro">Altro</option>
+        </select>
+        <button class="btn btn-primary" onclick="addManual()" style="padding:7px 16px;">Aggiungi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MENU = [
+  {
+    day: 'Lunedì',
+    short: 'Lun',
+    emoji: '🥗',
+    main: {
+      name: 'Insalata di pollo grigliate con rucola e pomodorini',
+      desc: 'Fresca, leggera e saporita — ideale per iniziare la settimana',
+      img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop',
+      steps: [
+        'Condire i petti di pollo con olio, limone, sale, pepe e origano. Grigliare 6-7 minuti per lato.',
+        'Lavare la rucola e i pomodorini. Tagliare i pomodorini a metà.',
+        'Affettare il pollo a striscioline. Comporre l\'insalata con rucola, pomodorini e pollo.',
+        'Aggiungere scaglie di parmigiano, olio EVO, sale e succo di limone. Servire subito.'
+      ],
+      ingredients: [
+        { name: 'Petti di pollo', qty: '600 g', cat: 'Carne & Affettati' },
+        { name: 'Rucola', qty: '150 g', cat: 'Verdura & Frutta' },
+        { name: 'Pomodorini ciliegino', qty: '250 g', cat: 'Verdura & Frutta' },
+        { name: 'Parmigiano a scaglie', qty: '50 g', cat: 'Latticini & Uova' },
+        { name: 'Olio EVO', qty: '4 cucchiai', cat: 'Condimenti & Spezie' },
+        { name: 'Limoni', qty: '2', cat: 'Verdura & Frutta' },
+        { name: 'Origano', qty: 'q.b.', cat: 'Condimenti & Spezie' }
+      ]
+    },
+    alt: {
+      name: 'Panzanella toscana con verdure estive',
+      desc: 'Il classico della tradizione — pane raffermo, pomodori e basilico',
+      img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop',
+      steps: [
+        'Tagliare il pane raffermo a tocchi e bagnarlo leggermente con acqua e aceto. Strizzarlo bene.',
+        'Tagliare i pomodori a pezzi grossi, il cetriolo a rondelle, il cipollotto a fette sottili.',
+        'Unire tutto il pane con le verdure, basilico abbondante, olio EVO, sale e pepe.',
+        'Lasciare riposare in frigo almeno 30 minuti prima di servire.'
+      ],
+      ingredients: [
+        { name: 'Pane toscano raffermo', qty: '400 g', cat: 'Pasta & Cereali' },
+        { name: 'Pomodori ramati', qty: '500 g', cat: 'Verdura & Frutta' },
+        { name: 'Cetriolo', qty: '1 grande', cat: 'Verdura & Frutta' },
+        { name: 'Cipollotto rosso', qty: '1', cat: 'Verdura & Frutta' },
+        { name: 'Basilico fresco', qty: '1 mazzo', cat: 'Condimenti & Spezie' },
+        { name: 'Aceto di vino rosso', qty: '2 cucchiai', cat: 'Condimenti & Spezie' },
+        { name: 'Olio EVO', qty: '4 cucchiai', cat: 'Condimenti & Spezie' }
+      ]
+    }
+  },
+  {
+    day: 'Martedì',
+    short: 'Mar',
+    emoji: '🍝',
+    main: {
+      name: 'Pasta al pomodoro fresco con basilico e mozzarella',
+      desc: 'Semplicità italiana — con pomodori di stagione profumatissimi',
+      img: 'https://images.unsplash.com/photo-1598866594230-a7c12756260f?w=800&auto=format&fit=crop',
+      steps: [
+        'Cuocere la pasta in abbondante acqua salata. Tenere da parte un mestolo di acqua di cottura.',
+        'Tagliare i pomodori freschi a cubetti, saltarli in padella con aglio e olio per 8 minuti.',
+        'Mantecare la pasta con il sugo, aggiungere acqua di cottura se serve.',
+        'Servire con mozzarella strappata a mano, basilico fresco e un filo di olio a crudo.'
+      ],
+      ingredients: [
+        { name: 'Spaghetti o rigatoni', qty: '360 g', cat: 'Pasta & Cereali' },
+        { name: 'Pomodori maturi', qty: '700 g', cat: 'Verdura & Frutta' },
+        { name: 'Mozzarella fiordilatte', qty: '2 palline (250 g)', cat: 'Latticini & Uova' },
+        { name: 'Aglio', qty: '2 spicchi', cat: 'Condimenti & Spezie' },
+        { name: 'Basilico fresco', qty: '1 mazzo', cat: 'Condimenti & Spezie' },
+        { name: 'Olio EVO', qty: '4 cucchiai', cat: 'Condimenti & Spezie' }
+      ]
+    },
+    alt: {
+      name: 'Farfalle con pesto di zucchine e ricotta',
+      desc: 'Pesto estivo veloce e cremoso, alternativa alla pasta al pomodoro',
+      img: 'https://images.unsplash.com/photo-1556761223-4c4282c73f77?w=800&auto=format&fit=crop',
+      steps: [
+        'Tagliare le zucchine a rondelle e saltarle in padella con olio e aglio finché dorate.',
+        'Frullare le zucchine con ricotta, pinoli, parmigiano, sale e un filo d\'olio fino a crema.',
+        'Cuocere le farfalle al dente. Condire con il pesto di zucchine aggiungendo acqua di cottura.',
+        'Servire con una grattugiata di parmigiano e foglioline di menta.'
+      ],
+      ingredients: [
+        { name: 'Farfalle', qty: '360 g', cat: 'Pasta & Cereali' },
+        { name: 'Zucchine', qty: '4 medie', cat: 'Verdura & Frutta' },
+        { name: 'Ricotta', qty: '200 g', cat: 'Latticini & Uova' },
+        { name: 'Parmigiano grattugiato', qty: '60 g', cat: 'Latticini & Uova' },
+        { name: 'Pinoli', qty: '30 g', cat: 'Altro' },
+        { name: 'Menta fresca', qty: 'q.b.', cat: 'Condimenti & Spezie' }
+      ]
+    }
+  },
+  {
+    day: 'Mercoledì',
+    short: 'Mer',
+    emoji: '🍗',
+    main: {
+      name: 'Pollo al limone e erbe aromatiche con verdure grigliate',
+      desc: 'Secondo estivo profumato, con grigliata di stagione',
+      img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop',
+      steps: [
+        'Marinare il pollo con olio, succo e scorza di limone, aglio, rosmarino e timo per 30 min.',
+        'Tagliare peperoni, melanzane e zucchine a listarelle. Grigliare le verdure con poco olio e sale.',
+        'Cuocere il pollo in padella o al forno (180°C) per 25-30 minuti, girando a metà cottura.',
+        'Servire il pollo con le verdure grigliate e una spruzzata di limone fresco.'
+      ],
+      ingredients: [
+        { name: 'Cosce di pollo', qty: '6 (900 g)', cat: 'Carne & Affettati' },
+        { name: 'Limoni biologici', qty: '3', cat: 'Verdura & Frutta' },
+        { name: 'Peperoni misti', qty: '2', cat: 'Verdura & Frutta' },
+        { name: 'Melanzana', qty: '1 grande', cat: 'Verdura & Frutta' },
+        { name: 'Zucchine', qty: '2', cat: 'Verdura & Frutta' },
+        { name: 'Rosmarino e timo', qty: 'qualche rametto', cat: 'Condimenti & Spezie' },
+        { name: 'Aglio', qty: '3 spicchi', cat: 'Condimenti & Spezie' }
+      ]
+    },
+    alt: {
+      name: 'Frittata di patate e cipolla al forno',
+      desc: 'Rustica e sostanziosa, ottima anche fredda come spuntino',
+      img: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop',
+      steps: [
+        'Pelare e tagliare le patate a fette sottili. Affettare le cipolle. Rosolare entrambe in padella con olio per 15 minuti.',
+        'Sbattere le uova con sale, pepe, parmigiano e prezzemolo tritato.',
+        'Unire le patate e cipolle alle uova. Versare in una teglia oliata.',
+        'Cuocere in forno a 180°C per 25 minuti fino a doratura. Servire tiepida.'
+      ],
+      ingredients: [
+        { name: 'Patate', qty: '600 g', cat: 'Verdura & Frutta' },
+        { name: 'Cipolle dorate', qty: '2 grandi', cat: 'Verdura & Frutta' },
+        { name: 'Uova', qty: '6', cat: 'Latticini & Uova' },
+        { name: 'Parmigiano grattugiato', qty: '40 g', cat: 'Latticini & Uova' },
+        { name: 'Prezzemolo', qty: 'un mazzetto', cat: 'Condimenti & Spezie' }
+      ]
+    }
+  },
+  {
+    day: 'Giovedì',
+    short: 'Gio',
+    emoji: '🥙',
+    main: {
+      name: 'Wrap di tacchino con avocado, pomodori e lattuga',
+      desc: 'Leggero e veloce, perfetto per una serata calda d\'estate',
+      img: 'https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?w=800&auto=format&fit=crop',
+      steps: [
+        'Tagliare il tacchino a striscioline. Cuocere in padella con olio, cumino e paprika per 8 minuti.',
+        'Affettare l\'avocado e i pomodori. Tagliare la lattuga a listarelle.',
+        'Riscaldare le piadine/tortillas. Spalmare con lo yogurt greco mischiato con lime e aglio.',
+        'Farcire ogni wrap con tacchino, avocado, pomodori e lattuga. Avvolgere e servire.'
+      ],
+      ingredients: [
+        { name: 'Fesa di tacchino', qty: '500 g', cat: 'Carne & Affettati' },
+        { name: 'Tortillas grandi', qty: '6', cat: 'Pasta & Cereali' },
+        { name: 'Avocado', qty: '2', cat: 'Verdura & Frutta' },
+        { name: 'Pomodori', qty: '3', cat: 'Verdura & Frutta' },
+        { name: 'Lattuga iceberg', qty: '1/2', cat: 'Verdura & Frutta' },
+        { name: 'Yogurt greco', qty: '150 g', cat: 'Latticini & Uova' },
+        { name: 'Lime', qty: '1', cat: 'Verdura & Frutta' },
+        { name: 'Cumino e paprika', qty: 'q.b.', cat: 'Condimenti & Spezie' }
+      ]
+    },
+    alt: {
+      name: 'Hummus di ceci con verdure crude e pane pita',
+      desc: 'Leggero e nutriente, piatto completo a base vegetale',
+      img: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&auto=format&fit=crop',
+      steps: [
+        'Scolare i ceci (tenere il liquido). Frullare con tahini, aglio, limone, sale e un po\' del liquido di conserva.',
+        'Aggiungere olio a filo mentre si frulla fino a crema liscia. Assaggiare e aggiustare di sale e limone.',
+        'Tagliare carote, sedano, cetriolo e peperoni a bastoncini. Riscaldare le pite.',
+        'Servire l\'hummus in un piatto con un filo d\'olio, paprika, prezzemolo e le verdure per intingere.'
+      ],
+      ingredients: [
+        { name: 'Ceci in barattolo', qty: '2 barattoli (800 g)', cat: 'Legumi' },
+        { name: 'Tahini (pasta di sesamo)', qty: '3 cucchiai', cat: 'Condimenti & Spezie' },
+        { name: 'Pane pita', qty: '6', cat: 'Pasta & Cereali' },
+        { name: 'Carote', qty: '2', cat: 'Verdura & Frutta' },
+        { name: 'Cetriolo', qty: '1', cat: 'Verdura & Frutta' },
+        { name: 'Peperone rosso', qty: '1', cat: 'Verdura & Frutta' },
+        { name: 'Limone', qty: '2', cat: 'Verdura & Frutta' }
+      ]
+    }
+  },
+  {
+    day: 'Venerdì',
+    short: 'Ven',
+    emoji: '🍕',
+    main: {
+      name: 'Pizza in teglia con pomodoro, mozzarella e verdure estive',
+      desc: 'Impasto soffice, cottura perfetta — la pizza del venerdì sera',
+      img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop',
+      steps: [
+        'Sciogliere il lievito in acqua tiepida con un pizzico di zucchero. Impastare con farina, olio e sale per 10 minuti.',
+        'Far lievitare coperto per 2 ore. Stendere in teglia oliata e far lievitare altri 30 minuti.',
+        'Condire con passata di pomodoro, sale, origano. Cuocere a 220°C per 15 minuti.',
+        'Aggiungere mozzarella, peperoni e olive. Infornare altri 10 minuti fino a doratura.'
+      ],
+      ingredients: [
+        { name: 'Farina 00', qty: '500 g', cat: 'Pasta & Cereali' },
+        { name: 'Lievito di birra fresco', qty: '10 g', cat: 'Altro' },
+        { name: 'Passata di pomodoro', qty: '300 ml', cat: 'Verdura & Frutta' },
+        { name: 'Mozzarella per pizza', qty: '300 g', cat: 'Latticini & Uova' },
+        { name: 'Peperoni colorati', qty: '2', cat: 'Verdura & Frutta' },
+        { name: 'Olive nere', qty: '80 g', cat: 'Altro' },
+        { name: 'Origano', qty: 'q.b.', cat: 'Condimenti & Spezie' }
+      ]
+    },
+    alt: {
+      name: 'Focaccia barese con pomodorini e rosmarino',
+      desc: 'Alta e morbidissima — più semplice della pizza, altrettanto buona',
+      img: 'https://images.unsplash.com/photo-1571167530149-c1105da4c2c8?w=800&auto=format&fit=crop',
+      steps: [
+        'Impastare farina, acqua, olio, lievito e sale. Consistenza molto morbida e appiccicosa.',
+        'Versare in teglia abbondantemente oliata. Stendere con le dita e far lievitare 1 ora.',
+        'Affondare i pomodorini nella pasta, spolverare con sale grosso e rosmarino.',
+        'Cuocere a 220°C per 20-25 minuti fino a crosta dorata e fragrante.'
+      ],
+      ingredients: [
+        { name: 'Farina 0 o semola rimacinata', qty: '500 g', cat: 'Pasta & Cereali' },
+        { name: 'Lievito di birra fresco', qty: '15 g', cat: 'Altro' },
+        { name: 'Pomodorini', qty: '300 g', cat: 'Verdura & Frutta' },
+        { name: 'Rosmarino fresco', qty: '2 rametti', cat: 'Condimenti & Spezie' },
+        { name: 'Olio EVO abbondante', qty: '8 cucchiai', cat: 'Condimenti & Spezie' },
+        { name: 'Sale grosso', qty: 'q.b.', cat: 'Condimenti & Spezie' }
+      ]
+    }
+  },
+  {
+    day: 'Sabato',
+    short: 'Sab',
+    emoji: '🥩',
+    main: {
+      name: 'Hamburger di manzo fatto in casa con insalata e patatine al forno',
+      desc: 'Il sabato merita qualcosa di speciale — burger artigianale',
+      img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop',
+      steps: [
+        'Tagliare le patate a spicchi. Condire con olio, sale, paprika e rosmarino. Infornare a 200°C per 35 min.',
+        'Formare 3 polpette con la carne macinata. Condire solo con sale e pepe. Appiattire leggermente.',
+        'Cuocere i burger su padella o griglia ben calda: 3-4 min per lato per una cottura media.',
+        'Tostare i panini. Farcire con insalata, pomodoro, cipolla, maionese e il burger caldo.'
+      ],
+      ingredients: [
+        { name: 'Carne bovina macinata', qty: '600 g', cat: 'Carne & Affettati' },
+        { name: 'Panini per burger', qty: '3', cat: 'Pasta & Cereali' },
+        { name: 'Patate', qty: '700 g', cat: 'Verdura & Frutta' },
+        { name: 'Lattuga', qty: '1/2', cat: 'Verdura & Frutta' },
+        { name: 'Pomodori', qty: '2', cat: 'Verdura & Frutta' },
+        { name: 'Cipolla rossa', qty: '1', cat: 'Verdura & Frutta' },
+        { name: 'Maionese e ketchup', qty: 'q.b.', cat: 'Condimenti & Spezie' },
+        { name: 'Cheddar a fette', qty: '3 fette', cat: 'Latticini & Uova' }
+      ]
+    },
+    alt: {
+      name: 'Salsicce grigliate con peperonata e polenta',
+      desc: 'Rustico e conviviale — perfetto per una serata in terrazza',
+      img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&auto=format&fit=crop',
+      steps: [
+        'Tagliare peperoni e cipolle a listarelle. Stufare in padella con olio, aglio e un pizzico di sale per 25 minuti.',
+        'Cuocere le salsicce sulla griglia o in padella rigirandole fino a doratura uniforme.',
+        'Preparare la polenta seguendo le istruzioni. Mantecare con burro e parmigiano.',
+        'Servire le salsicce sulla polenta con la peperonata sopra.'
+      ],
+      ingredients: [
+        { name: 'Salsicce di maiale', qty: '600 g', cat: 'Carne & Affettati' },
+        { name: 'Peperoni gialli e rossi', qty: '4', cat: 'Verdura & Frutta' },
+        { name: 'Cipolla bianca', qty: '2', cat: 'Verdura & Frutta' },
+        { name: 'Farina di mais per polenta', qty: '300 g', cat: 'Pasta & Cereali' },
+        { name: 'Burro', qty: '50 g', cat: 'Latticini & Uova' },
+        { name: 'Parmigiano grattugiato', qty: '50 g', cat: 'Latticini & Uova' }
+      ]
+    }
+  },
+  {
+    day: 'Domenica',
+    short: 'Dom',
+    emoji: '🍖',
+    main: {
+      name: 'Arrosto di vitello con patate e rosmarino al forno',
+      desc: 'Il classico pranzo della domenica — profumato e conviviale',
+      img: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop',
+      steps: [
+        'Massaggiare il vitello con olio, aglio, rosmarino, salvia, sale e pepe. Lasciare marinare 30 minuti.',
+        'Rosolare la carne su tutti i lati in una cocotte. Sfumare con vino bianco.',
+        'Aggiungere le patate tagliate a tocchi. Infornare a 180°C per 60-75 minuti, irrorando di tanto in tanto.',
+        'Far riposare la carne coperta 10 minuti prima di tagliare. Servire con il fondo di cottura.'
+      ],
+      ingredients: [
+        { name: 'Arrosto di vitello', qty: '900 g', cat: 'Carne & Affettati' },
+        { name: 'Patate', qty: '800 g', cat: 'Verdura & Frutta' },
+        { name: 'Vino bianco secco', qty: '1 bicchiere', cat: 'Altro' },
+        { name: 'Rosmarino e salvia', qty: 'qualche rametto', cat: 'Condimenti & Spezie' },
+        { name: 'Aglio', qty: '4 spicchi', cat: 'Condimenti & Spezie' },
+        { name: 'Olio EVO', qty: '5 cucchiai', cat: 'Condimenti & Spezie' },
+        { name: 'Brodo di carne', qty: '200 ml', cat: 'Altro' }
+      ]
+    },
+    alt: {
+      name: 'Lasagne al ragù di pollo e verdure',
+      desc: 'Versione estiva più leggera della classica lasagna',
+      img: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=800&auto=format&fit=crop',
+      steps: [
+        'Preparare il ragù: soffriggere cipolla, carota e sedano. Aggiungere pollo macinato e rosolare.',
+        'Aggiungere passata di pomodoro, zucchine a cubetti, sale e basilico. Cuocere 30 minuti.',
+        'Preparare la besciamella: sciogliere burro, unire farina, poi latte caldo. Cuocere mescolando.',
+        'Alternare strati: pasta, ragù, besciamella, parmigiano. Infornare a 180°C per 40 minuti.'
+      ],
+      ingredients: [
+        { name: 'Lasagne secche', qty: '300 g', cat: 'Pasta & Cereali' },
+        { name: 'Pollo macinato', qty: '500 g', cat: 'Carne & Affettati' },
+        { name: 'Passata di pomodoro', qty: '400 ml', cat: 'Verdura & Frutta' },
+        { name: 'Zucchine', qty: '2', cat: 'Verdura & Frutta' },
+        { name: 'Latte', qty: '600 ml', cat: 'Latticini & Uova' },
+        { name: 'Burro', qty: '50 g', cat: 'Latticini & Uova' },
+        { name: 'Farina', qty: '50 g', cat: 'Pasta & Cereali' },
+        { name: 'Parmigiano grattugiato', qty: '80 g', cat: 'Latticini & Uova' }
+      ]
+    }
+  }
+];
+
+let currentDay = 0;
+let currentVariant = 'main'; // 'main' or 'alt'
+let shoppingList = JSON.parse(localStorage.getItem('menuEstivoSpesa') || '[]');
+let addedMeals = JSON.parse(localStorage.getItem('menuEstivoAdded') || '[]');
+
+function saveData() {
+  localStorage.setItem('menuEstivoSpesa', JSON.stringify(shoppingList));
+  localStorage.setItem('menuEstivoAdded', JSON.stringify(addedMeals));
+  updateSpesaCount();
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'spesa') renderSpesa();
+}
+
+function updateSpesaCount() {
+  const cnt = shoppingList.length;
+  const el = document.getElementById('spesa-count');
+  el.textContent = cnt;
+  el.style.display = cnt > 0 ? 'inline' : 'none';
+}
+
+function renderWeekGrid() {
+  const grid = document.getElementById('week-grid');
+  grid.innerHTML = MENU.map((d, i) => `
+    <div class="day-thumb ${i === currentDay ? 'selected' : ''}" onclick="selectDay(${i})">
+      <span class="day-emoji">${d.emoji}</span>
+      <div class="day-name">${d.short}</div>
+      <div class="day-meal">${d.main.name.split(' ').slice(0,3).join(' ')}…</div>
+    </div>
+  `).join('');
+}
+
+function selectDay(idx) {
+  currentDay = idx;
+  currentVariant = 'main';
+  renderWeekGrid();
+  renderDayDetail();
+  document.getElementById('day-detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderDayDetail() {
+  const d = MENU[currentDay];
+  const meal = d[currentVariant];
+  const mealKey = `${currentDay}-${currentVariant}`;
+  const isAdded = addedMeals.includes(mealKey);
+
+  document.getElementById('day-detail').innerHTML = `
+    <div class="meal-card">
+      <div class="meal-card-header">
+        <div class="meal-card-meta">
+          <div class="meal-day-label">${d.day} · ${currentVariant === 'main' ? 'Piatto principale' : 'Variante'}</div>
+          <h2>${meal.name}</h2>
+        </div>
+      </div>
+      <div class="meal-tabs">
+        <button class="meal-tab ${currentVariant === 'main' ? 'active' : ''}" onclick="switchVariant('main')">
+          ${d.emoji} Ricetta principale
+        </button>
+        <button class="meal-tab ${currentVariant === 'alt' ? 'active' : ''}" onclick="switchVariant('alt')">
+          🔄 Variante
+        </button>
+      </div>
+      <div class="meal-detail active">
+        <div class="meal-image-wrap">
+          <img src="${meal.img}" alt="${meal.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&auto=format&fit=crop'">
+          <div class="meal-image-overlay">
+            <h3>${meal.name}</h3>
+            <p>${meal.desc}</p>
+          </div>
+        </div>
+        <div class="meal-body">
+          <div class="meal-recipe">
+            <div class="section-label">Preparazione</div>
+            <ul class="recipe-steps">
+              ${meal.steps.map((s, i) => `<li><span class="step-num">${i+1}</span><span>${s}</span></li>`).join('')}
+            </ul>
+          </div>
+          <div class="meal-ingredients">
+            <div class="section-label">Ingredienti · 3 persone</div>
+            <ul class="ingredient-list">
+              ${meal.ingredients.map(ing => `
+                <li>
+                  <span class="ing-name">${ing.name}</span>
+                  <span class="ing-qty">${ing.qty}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+        </div>
+        <button class="add-to-list-btn ${isAdded ? 'added' : ''}" onclick="addToList(${currentDay}, '${currentVariant}')">
+          ${isAdded ? '✅ Ingredienti aggiunti alla lista' : '🛒 Aggiungi ingredienti alla lista spesa'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function switchVariant(v) {
+  currentVariant = v;
+  renderDayDetail();
+}
+
+function addToList(dayIdx, variant) {
+  const mealKey = `${dayIdx}-${variant}`;
+  const meal = MENU[dayIdx][variant];
+
+  if (addedMeals.includes(mealKey)) {
+    showToast('Ingredienti già nella lista!');
+    return;
+  }
+
+  meal.ingredients.forEach(ing => {
+    const source = `${MENU[dayIdx].day} (${variant === 'main' ? 'principale' : 'variante'})`;
+    const existing = shoppingList.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
+    if (!existing) {
+      shoppingList.push({
+        id: Date.now() + Math.random(),
+        name: ing.name,
+        qty: ing.qty,
+        cat: ing.cat,
+        source: source,
+        checked: false
+      });
+    }
+  });
+
+  addedMeals.push(mealKey);
+  saveData();
+  renderDayDetail();
+  showToast(`✅ ${meal.ingredients.length} ingredienti aggiunti!`);
+}
+
+function renderSpesa() {
+  const content = document.getElementById('spesa-content');
+  if (shoppingList.length === 0) {
+    content.innerHTML = `
+      <div class="spesa-empty">
+        <div class="empty-icon">🛒</div>
+        <h3>Lista vuota</h3>
+        <p>Vai al menu, seleziona un giorno e aggiungi gli ingredienti</p>
+      </div>`;
+    return;
+  }
+
+  const bycat = {};
+  shoppingList.forEach(item => {
+    if (!bycat[item.cat]) bycat[item.cat] = [];
+    bycat[item.cat].push(item);
+  });
+
+  const catOrder = ['Verdura & Frutta', 'Carne & Affettati', 'Latticini & Uova', 'Pasta & Cereali', 'Legumi', 'Condimenti & Spezie', 'Altro'];
+  const sorted = [...catOrder.filter(c => bycat[c]), ...Object.keys(bycat).filter(c => !catOrder.includes(c))];
+
+  content.innerHTML = sorted.map(cat => `
+    <div class="spesa-section">
+      <div class="spesa-section-title">${cat}</div>
+      ${bycat[cat].map(item => `
+        <div class="spesa-item ${item.checked ? 'checked' : ''}" id="item-${item.id}">
+          <div class="spesa-item-left">
+            <input type="checkbox" class="spesa-item-cb" ${item.checked ? 'checked' : ''} onchange="toggleItem('${item.id}')">
+            <span class="spesa-item-name">${item.name}</span>
+          </div>
+          <div class="spesa-item-right">
+            <span class="spesa-item-qty">${item.qty}</span>
+            <span class="spesa-item-source">${item.source || ''}</span>
+            <button class="spesa-item-del" onclick="deleteItem('${item.id}')" title="Rimuovi">✕</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function toggleItem(id) {
+  const item = shoppingList.find(i => String(i.id) === String(id));
+  if (item) { item.checked = !item.checked; saveData(); renderSpesa(); }
+}
+
+function deleteItem(id) {
+  shoppingList = shoppingList.filter(i => String(i.id) !== String(id));
+  saveData();
+  renderSpesa();
+}
+
+function clearList() {
+  if (!confirm('Svuotare tutta la lista della spesa?')) return;
+  shoppingList = [];
+  addedMeals = [];
+  saveData();
+  renderSpesa();
+}
+
+function addManual() {
+  const nome = document.getElementById('manual-nome').value.trim();
+  const qty = document.getElementById('manual-qty').value.trim();
+  const cat = document.getElementById('manual-cat').value;
+  if (!nome) { showToast('Inserisci un nome!'); return; }
+  shoppingList.push({ id: Date.now(), name: nome, qty: qty || '—', cat: cat, source: 'Manuale', checked: false });
+  saveData();
+  renderSpesa();
+  document.getElementById('manual-nome').value = '';
+  document.getElementById('manual-qty').value = '';
+  showToast('Ingrediente aggiunto!');
+}
+
+function exportExcel() {
+  if (shoppingList.length === 0) { showToast('Lista vuota!'); return; }
+  const ws_data = [['Ingrediente', 'Quantità', 'Categoria', 'Dal pasto', 'Acquistato']];
+  shoppingList.forEach(item => {
+    ws_data.push([item.name, item.qty, item.cat, item.source || '', item.checked ? 'Sì' : 'No']);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+  ws['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 30 }, { wch: 12 }];
+
+  const header_style = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '2D6A4F' } }, alignment: { horizontal: 'center' } };
+  ['A1','B1','C1','D1','E1'].forEach(cell => {
+    if (ws[cell]) ws[cell].s = header_style;
+  });
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Lista Spesa');
+  XLSX.writeFile(wb, 'lista_spesa_menu_estivo.xlsx');
+  showToast('✅ Excel scaricato!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// INIT
+renderWeekGrid();
+selectDay(0);
+updateSpesaCount();
+</script>
+</body>
+</html>
